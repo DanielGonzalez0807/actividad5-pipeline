@@ -1,0 +1,22 @@
+{
+  "name": "actividad5-pipeline",
+  "version": "1.0.0",
+  "description": "App Node.js desplegada automáticamente con AWS CodePipeline, CodeBuild y Elastic Beanstalk",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "pretest": "node -e \"require('fs').mkdirSync('reports',{recursive:true})\"",
+    "test": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=reports/junit.xml \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "Daniel González Ortiz",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.1.0"
+  }
+}

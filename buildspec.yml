@@ -1,0 +1,44 @@
+# Etapa de Construcción (AWS CodeBuild)
+# Instala dependencias, corre las pruebas, guarda la info del build
+# y empaqueta el artefacto que despliega Elastic Beanstalk.
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+  pre_build:
+    commands:
+      - echo "Instalando dependencias..."
+      - npm ci
+  build:
+    commands:
+      - echo "Ejecutando pruebas unitarias..."
+      - npm test
+  post_build:
+    commands:
+      - echo "Generando build-info.json..."
+      - >
+        node -e "require('fs').writeFileSync('build-info.json', JSON.stringify({
+        commit: process.env.CODEBUILD_RESOLVED_SOURCE_VERSION || 'desconocido',
+        buildId: process.env.CODEBUILD_BUILD_NUMBER || 'n/a',
+        fecha: new Date().toISOString() }))"
+      - cat build-info.json
+
+reports:
+  pruebas-unitarias:
+    files:
+      - reports/junit.xml
+    file-format: JUNITXML
+
+artifacts:
+  files:
+    - src/**/*
+    - public/**/*
+    - package.json
+    - package-lock.json
+    - build-info.json
+
+cache:
+  paths:
+    - /root/.npm/**/*

@@ -1,0 +1,45 @@
+# ------------------------------------------------------------------
+# PLAN B — solo si el Learner Lab bloquea CodePipeline.
+# Copia este archivo a .github/workflows/ci-cd.yml
+# Secretos del repo (de "AWS Details" del Learner Lab, vencen cada ~4 h):
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
+# ------------------------------------------------------------------
+name: CI-CD actividad 5
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  APP: actividad5-pipeline      # nombre de la aplicación en Elastic Beanstalk
+  ENTORNO: actividad5-env       # nombre del entorno en Elastic Beanstalk
+
+jobs:
+  construir-y-desplegar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - name: Fuente -> Construcción (pruebas)
+        run: |
+          npm ci
+          npm test
+          echo "{\"commit\":\"$GITHUB_SHA\",\"buildId\":\"$GITHUB_RUN_NUMBER\",\"fecha\":\"$(date -u +%FT%TZ)\"}" > build-info.json
+          zip -qr app.zip src public package.json package-lock.json build-info.json
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Despliegue en Elastic Beanstalk
+        run: |
+          VERSION="v${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          BUCKET=$(aws elasticbeanstalk create-storage-location --query S3Bucket --output text)
+          aws s3 cp app.zip "s3://$BUCKET/$APP/$VERSION.zip"
+          aws elasticbeanstalk create-application-version --application-name "$APP" --version-label "$VERSION" \
+            --source-bundle S3Bucket="$BUCKET",S3Key="$APP/$VERSION.zip"
+          aws elasticbeanstalk update-environment --environment-name "$ENTORNO" --version-label "$VERSION"
+          aws elasticbeanstalk wait environment-updated --environment-names "$ENTORNO"
