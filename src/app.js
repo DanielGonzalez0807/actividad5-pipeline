@@ -13,8 +13,8 @@ function leerInfoBuild() {
   }
 }
 
-const VERSION = '1.0.0';
-const MENSAJE = 'Hola desde AWS CodePipeline';
+const VERSION = '1.1.0';
+const MENSAJE = 'Hola desde GitHub Actions + Elastic Beanstalk';  
 
 function crearApp() {
   const app = express();
